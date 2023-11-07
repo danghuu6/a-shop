@@ -4,8 +4,8 @@
  - npm start
  
 # How to config .env
- - create mongodb
- - create .env
+create mongodb
+create .env
  - PORT=3000
  - TOKEN_SECRET=your token
  - DB_NAME=your db name
