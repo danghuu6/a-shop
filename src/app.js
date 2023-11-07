@@ -9,13 +9,12 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-const db = require('./config/db/index')
+const db = require('./config/db')
+const route = require('./route')
 
 db.connect()
 
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+route(app)
 
 app.listen(port, () => {
   console.log(`ShopX app listening on port ${port}`)
