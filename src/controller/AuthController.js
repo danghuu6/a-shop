@@ -34,7 +34,7 @@ class AuthController {
 
     async login (req, res) {
         const user = await User.findOne({email: req.body.email});
-        if (!user) return res.status(422).send('Email or Password is not correct');
+        if (!user) return res.status(400).send('Email or Password is not correct');
 
         const checkPassword = await bcrypt.compare(req.body.password, user.password);
 
@@ -68,6 +68,31 @@ class AuthController {
         }
 
         res.header('auth-token', token).send(token);
+    }
+
+    async logout(req, res) {
+        const user = await User.findOne({email: req.body.email});
+        if (!user) return res.status(400).send({
+            code: 400,
+            message: "Bad Request",
+            Data: null
+        });
+        
+
+        try {
+            await UserSession.deleteOne({email: user.email})
+            return res.send({
+                code: 200,
+                message: "SUCCESS",
+                data: null
+            })
+        } catch(e) {
+            res.status(400).send({
+                code: 400,
+                message: e,
+                data: null
+            });
+        }
     }
 }
 
