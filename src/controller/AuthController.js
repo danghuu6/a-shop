@@ -52,6 +52,9 @@ class AuthController {
         
         const token = jwt.sign(payload, process.env.TOKEN_SECRET);
 
+        const checkUserSession = await UserSession.findOne({email: user.email});
+        if (checkUserSession) await UserSession.deleteOne({email: user.email})
+
         const userSession = new UserSession({
             email: user.email,
             expireDate: expireDate,
