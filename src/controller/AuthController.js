@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const User = require('./../model/user');
+const User = require('../model/User');
+const UserSession = require('../model/userSession');
 const { registerValidator } = require('./../validation/auth');
 
 class AuthController {
@@ -31,6 +32,40 @@ class AuthController {
         }
     };
 
+    async login (req, res) {
+        const user = await User.findOne({email: req.body.email});
+        if (!user) return res.status(422).send('Email or Password is not correct');
+
+        const checkPassword = await bcrypt.compare(req.body.password, user.password);
+
+        if (!checkPassword) return res.status(400).send('Email or Password is not correct');
+
+        const expireDate = new Date(Date.now() + (60 * 60 * 1000 * 24));
+
+        const payload = {
+            _id: user.id,
+            fullName: user.fullName,
+            email: user.email,
+            roleList: user.roleList,
+            expireDate: expireDate
+        }
+        
+        const token = jwt.sign(payload, process.env.TOKEN_SECRET);
+
+        const userSession = new UserSession({
+            email: user.email,
+            expireDate: expireDate,
+            accessToken: token
+        })
+
+        try {
+            await userSession.save();
+        } catch (err) {
+            res.status(400).send(err);
+        }
+
+        res.header('auth-token', token).send(token);
+    }
 }
 
 module.exports = new AuthController;
