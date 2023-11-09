@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const User = require('../model/User');
-const UserSession = require('../model/userSession');
+const User = require('../model/entity/User');
+const commonResponse = require('../model/response/commonResponse');
+const message = require('../constant/message')
+const UserSession = require('../model/entity/UserSession');
 const { registerValidator } = require('./../validation/auth');
 
 class AuthController {
@@ -9,11 +11,11 @@ class AuthController {
     async register (req, res) {
         const { error } = registerValidator(req.body);
     
-        if (error) return res.status(400).send(error.details[0].message);
+        if (error) return res.status(400).send(new commonResponse(400, error.details[0].message));
     
         const checkEmailExist = await User.findOne({ email: req.body.email });
     
-        if (checkEmailExist) return response.status(400).send('Email is exist');
+        if (checkEmailExist) return response.status(400).send(new commonResponse(400, message.EMAIL_EXIST));
     
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
@@ -26,19 +28,20 @@ class AuthController {
     
         try {
             const newUser = await user.save();
-            return res.send(newUser);
+            return res.send(new commonResponse(200, message.SUCCESS, newUser));
         } catch (err) {
-            res.status(400).send(err);
+            console.log(err)
+            res.status(400).send(new commonResponse(400, message.BAB_REQUEST));
         }
     };
 
     async login (req, res) {
         const user = await User.findOne({email: req.body.email});
-        if (!user) return res.status(400).send('Email or Password is not correct');
+        if (!user) return res.status(400).send(new commonResponse(400, message.LOGIN_FAIL));
 
         const checkPassword = await bcrypt.compare(req.body.password, user.password);
 
-        if (!checkPassword) return res.status(400).send('Email or Password is not correct');
+        if (!checkPassword) return res.status(400).send(new commonResponse(400, message.LOGIN_FAIL));
 
         const expireDate = new Date(Date.now() + (60 * 60 * 1000 * 24));
 
@@ -64,7 +67,7 @@ class AuthController {
         try {
             await userSession.save();
         } catch (err) {
-            res.status(400).send(err);
+            res.status(400).send(new commonResponse(400, message.BAB_REQUEST));
         }
 
         res.header('auth-token', token).send(token);
@@ -72,26 +75,14 @@ class AuthController {
 
     async logout(req, res) {
         const user = await User.findOne({email: req.body.email});
-        if (!user) return res.status(400).send({
-            code: 400,
-            message: "Bad Request",
-            Data: null
-        });
+        if (!user) return res.status(400).send(new commonResponse(400, message.USER_NOT_FOUND));
         
 
         try {
             await UserSession.deleteOne({email: user.email})
-            return res.send({
-                code: 200,
-                message: "SUCCESS",
-                data: null
-            })
+            return res.send(new commonResponse(200, message.SUCCESS))
         } catch(e) {
-            res.status(400).send({
-                code: 400,
-                message: e,
-                data: null
-            });
+            res.status(400).send(new commonResponse(400, message.BAB_REQUEST));
         }
     }
 }
